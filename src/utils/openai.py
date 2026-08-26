@@ -8,7 +8,7 @@ faz a requisição pro modelo da open ai
 
 from openai import OpenAI
 
-def request_llm(model:str, input:str, temperature:float, prompt:str, api_key:str, max_token:int|None|float = None) -> str:
+async def request_llm(model:str, input:str, temperature:float, prompt:str, api_key:str, max_token:int|None|float = None) -> str:
 
     try:
 
