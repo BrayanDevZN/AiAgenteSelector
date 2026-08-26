@@ -12,7 +12,7 @@ from repository.module import ControlCache
 class Midlleware(BaseHTTPMiddleware):
 
 
-    def dispatch(self, request:Request, call_next):
+    async def dispatch(self, request:Request, call_next):
 
 
         instance = ControlCache()
@@ -51,7 +51,7 @@ class Midlleware(BaseHTTPMiddleware):
                             detail=f"Exceded  rate limit for user {user}"
                         )
 
-        call_next(request)
+        return await call_next(request)
 
 
     
