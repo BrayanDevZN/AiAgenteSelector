@@ -1,0 +1,9 @@
+FROM python:3.14.7
+
+WORKDIR /app
+
+COPY src ./src
+
+RUN pip install -r src/controller/depends/requirements.txt 
+
+CMD ["python", "-m","uvicorn", "src.controller.init.main:app","--host", "0.0.0.0", "--port", "8000",  "--reload"]
