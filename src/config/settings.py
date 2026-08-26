@@ -27,6 +27,11 @@ try:
     host = os.getenv("host")
     rate_limit = os.getenv("rate_limit")
     global_rate_limit = os.getenv("global_rate_limit")
+    api_key = os.getenv("api_key")
+
+    if api_key is None:
+
+        raise ValueError("Expeted enviroin api_key")
 
     if rate_limit is None or global_rate_limit is None:
 
