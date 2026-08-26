@@ -28,6 +28,10 @@ try:
     rate_limit = os.getenv("rate_limit")
     global_rate_limit = os.getenv("global_rate_limit")
     api_key = os.getenv("api_key")
+    origin=os.getenv("origin")
+
+    if origin is None:
+        origin = "*"
 
     if api_key is None:
 
