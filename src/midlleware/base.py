@@ -57,7 +57,7 @@ class Midlleware(BaseHTTPMiddleware):
 
             logger.warning(f"Limite de requisições do usuario {user} excedido")
 
-            JSONResponse(
+            return JSONResponse(
                 status_code=429,
                 content={"error":f"Exceded rate limit of user {user}"}
             )
