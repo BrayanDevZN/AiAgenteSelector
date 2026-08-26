@@ -1,4 +1,4 @@
-from logs.log import logger
+from src.logs.log import logger
 
 
 """
@@ -14,14 +14,40 @@ def request_llm(model:str, input:str, temperature:float, prompt:str, api_key:str
 
         logger.info(f"Enviando requisição pra open ai usando modelo {model}... ")
 
+        NO_TEMPERATURE_MODELS = [
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-5.6-luna",
+    "gpt-5.6-terra",
+    "gpt-5.6-sol",
+    ]
+
 
         client = OpenAI(api_key=api_key)
 
-        response = client.responses.create(
-            model=model, temperature=temperature, instructions=prompt, input=input
-        ) if max_token is None else client.responses.create(
-            model=model, temperature=temperature, instructions=prompt, input=input, max_output_tokens=max_token
-        )
+
+        if not model in NO_TEMPERATURE_MODELS:
+
+            
+
+            response = client.responses.create(
+                model=model, temperature=temperature, instructions=prompt, input=input
+            ) if max_token is None else client.responses.create(
+                model=model, temperature=temperature, instructions=prompt, input=input, max_output_tokens=max_token
+            )
+
+        else:
+
+            logger.warning(f"model {model} not support param temperature")
+
+            response = client.responses.create(
+                            model=model,  instructions=prompt, input=input
+                        ) if max_token is None else client.responses.create(
+                            model=model,  instructions=prompt, input=input, max_output_tokens=max_token
+                        )
+
+
 
         return response.output_text
 
