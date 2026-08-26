@@ -14,7 +14,7 @@ def orquestration_model(input:str) -> str:
 
     return request_llm(
         
-        model="gpt-4.1-mini",
+        model="gpt-5-nano",
         temperature=0.1,
         prompt=prompt,
         api_key=api_key,

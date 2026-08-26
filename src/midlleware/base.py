@@ -8,11 +8,22 @@ Midlleware que varifica rate limit
 from src.config.settings import rate_limit, global_rate_limit
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request, HTTPException
-from repository.module import ControlCache
+from src.repository.module import ControlCache
+from fastapi.responses import JSONResponse
 class Midlleware(BaseHTTPMiddleware):
 
 
     async def dispatch(self, request:Request, call_next):
+
+        logger.info(f"Executando rota {request.url.path}...")
+
+        if not "X-instance_user" in request.headers:
+
+            return JSONResponse(
+                status_code=422, content={"error": "Expeted header X-instance_user"}
+            )
+
+        
 
 
         instance = ControlCache()
@@ -27,9 +38,9 @@ class Midlleware(BaseHTTPMiddleware):
 
             logger.warning("limite de requisições global excedido")
 
-            raise HTTPException(
+            return JSONResponse(
                 status_code=429,
-                detail="Exceded global rate limit"
+                content={"error":"Exceded global rate limit"}
             )
 
         else:
@@ -46,10 +57,10 @@ class Midlleware(BaseHTTPMiddleware):
 
             logger.warning(f"Limite de requisições do usuario {user} excedido")
 
-            raise HTTPException(
-                            status_code=429,
-                            detail=f"Exceded  rate limit for user {user}"
-                        )
+            JSONResponse(
+                status_code=429,
+                content={"error":f"Exceded rate limit of user {user}"}
+            )
 
         return await call_next(request)
 
