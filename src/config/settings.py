@@ -25,6 +25,12 @@ try:
 
     port = os.getenv("port")
     host = os.getenv("host")
+    rate_limit = os.getenv("rate_limit")
+    global_rate_limit = os.getenv("global_rate_limit")
+
+    if rate_limit is None or global_rate_limit is None:
+
+        raise ValueError("Expeted enviroins rate limit")
     
     
 

@@ -8,14 +8,17 @@ Controla o redis
 
 class ControlCache:
 
+    
+        
+
     #Cria o dado
-    def set(self, name:str, data:int, time:str|None = None) -> dict:
+    def set(self, name:str, time:str|None = None) -> dict:
 
         try:
 
             logger.info(f"salvando {name}...")
 
-            client.set(name, data)
+            client.incr(name)
 
             client.expire(name=name, time=time if time is not None else 60)
 
