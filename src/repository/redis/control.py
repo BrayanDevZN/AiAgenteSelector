@@ -35,11 +35,11 @@ class ControlCache:
 
             logger.info(f"Lendo {name}...")
 
-            data = client.get(name=name)
-            client.execute()
+            client.get(name=name)
+            
 
 
-            return data
+            return client.execute()[0]
 
         except Exception as e:
 
