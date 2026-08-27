@@ -71,9 +71,9 @@ class FilePrompt:
 
 instance = FilePrompt()
 prompts = instance.get()
-prompt_orquestration = prompts[0]
+prompt_orquestration = prompts[2]
 prompt_optimizate = prompts[1]
-prompt_orq_verbosity = prompts[2]
+prompt_orq_verbosity = prompts[0]
 
 
 

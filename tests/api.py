@@ -16,7 +16,7 @@ payload = {
     "input": "Me ensine redis",
     "prompt": "Seje um professor",
     "optimizate": {"verbosity": "medium", "limit": 20},
-    "verbosity":True
+    
 }
 
 start = perf_counter()

@@ -20,6 +20,8 @@ async def text_orquestration(payload:ValidTextRouter):
         if payload.optimizate and ((not "limit" in payload.optimizate.keys()) or 
                                    (payload.optimizate["limit"]>=len(payload.input))):
 
+            
+
 
             options, input =(await asyncio.gather(orquestration_model(input=payload.input, 
                             verbosity=True if payload.verbosity else False), 
@@ -30,6 +32,7 @@ async def text_orquestration(payload:ValidTextRouter):
 
             options = await orquestration_model(input=payload.input, verbosity=True if payload.verbosity else False)
             input = payload.input
+        
 
 
         if payload.verbosity:
@@ -44,6 +47,8 @@ async def text_orquestration(payload:ValidTextRouter):
                                 )
 
         else:
+
+            model = options
 
             response = await request_llm(
                 input=input, temperature=payload.temperature, 
