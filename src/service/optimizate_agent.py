@@ -8,7 +8,7 @@ from src.utils.openai import request_llm
 from src.repository.module import prompt_optimizate
 from src.config.settings import api_key
 
-async def optimizate_model(input:str) -> str:
+async def optimizate_model(input:str, verbosity:str) -> str:
 
     logger.info("Executando agente otimizador...")
 
@@ -19,7 +19,7 @@ async def optimizate_model(input:str) -> str:
         prompt=prompt_optimizate,
         api_key=api_key,
         input=input,
-        verbosity="high"
+        verbosity=verbosity
         
         
     )
