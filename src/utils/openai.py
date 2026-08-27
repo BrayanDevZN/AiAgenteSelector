@@ -42,9 +42,9 @@ async def request_llm(verbosity:Literal["high", "medium", "low"],model:str, inpu
             logger.warning(f"model {model} not support param temperature")
 
             response = client.responses.create(
-                            model=model,  instructions=prompt, input=input
+                            model=model,  instructions=prompt, input=input, text={"verbosity":verbosity}
                         ) if max_token is None else client.responses.create(
-                            model=model,  instructions=prompt, input=input, max_output_tokens=max_token
+                            model=model,  instructions=prompt, input=input, max_output_tokens=max_token, text={"verbosity":verbosity}
                         )
 
 
