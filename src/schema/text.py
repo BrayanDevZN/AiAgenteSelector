@@ -12,3 +12,4 @@ class ValidTextRouter(BaseModel):
     max_token: float|int|None = Field(default=None)
     optimizate: bool = Field(default=False)
     optimizate_limit: int|None = Field(default=None)
+    verbosity: bool = Field(default=False)
