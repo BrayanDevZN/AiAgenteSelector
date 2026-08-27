@@ -35,9 +35,9 @@ class ValidTextRouter(BaseModel):
 
                 else:
 
-                    if not isinstance(value, int) or isinstance(value, None):
+                    if not isinstance(value, int):
 
-                        raise TypeError(f"Expeted type of {value} int or None")
+                        raise TypeError(f"Expeted type of {value} int")
 
                     
 
