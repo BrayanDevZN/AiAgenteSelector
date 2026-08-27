@@ -561,6 +561,6 @@ O pacote analisado não inclui um arquivo de licença. Antes de distribuir ou ac
 
 <div align="center">
 
-Desenvolvido para tornar a escolha de modelos de IA mais eficiente, transparente e orientada à complexidade real de cada tarefa.
+Desenvolvido para tornar a escolha de modelos de IA mais eficiente, transparente e orientada à complexidade real de cada tarefa!
 
 </div>
