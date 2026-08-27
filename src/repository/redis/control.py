@@ -1,6 +1,6 @@
 from src.logs.log import logger
 from src.repository.redis.connect import client
-
+from redis import WatchError
 
 """
 Controla o redis
@@ -8,11 +8,39 @@ Controla o redis
 
 class ControlCache:
 
+    async def set(self, name:str, data:str, time:str|None=None):
+
+        while True:
+
+            try:
+
+                logger.info(f"Salvando {name}...")
+
+                
+                with client as cache:
+
+                        cache.watch(name)
+
+                        cache.multi()
+
+                        cache.set(name=name, value=data, ex=time if time is not None else 30)
+
+                        cache.execute()
+
+            except WatchError as e:
+                continue
+
+            
+
+                
+
+
+
     
         
 
-    #Cria o dado
-    async def set(self, name:str, time:str|None = None) -> dict:
+    #Cria o dado em operação atomica, incrementando automatico
+    async def Iset(self, name:str, time:str|None = None) -> dict:
 
         try:
 
@@ -48,6 +76,9 @@ class ControlCache:
 
             logger.error(e)
             raise Exception(e)
+
+
+    
 
 
         
