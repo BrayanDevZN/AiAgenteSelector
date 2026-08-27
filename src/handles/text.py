@@ -15,12 +15,14 @@ router_text = APIRouter(prefix="/text", tags=["text"])
 async def text_orquestration(payload:ValidTextRouter):
 
     try:
+        
 
-        if (payload.optimizate and payload.optimizate_limit is None) or (payload.optimizate and payload.optimizate_limit is not None 
-                                  and payload.optimizate_limit>=len(payload.input.split())):
+        if payload.optimizate and ((not "limit" in payload.optimizate.keys()) or 
+                                   (payload.optimizate["limit"]>=payload.input)):
 
 
-            options, input =await asyncio.gather(orquestration_model(input=payload.input), optimizate_model(input=payload.input))
+            options, input =(await asyncio.gather(orquestration_model(input=payload.input), 
+                            optimizate_model(input=payload.input, verbosity=payload.optimizate["verbosity"])))
 
         else:
 
@@ -36,6 +38,7 @@ async def text_orquestration(payload:ValidTextRouter):
                                verbosity=verbosity
                                ) if payload.verbosity else await request_llm(input=input, temperature=payload.temperature, 
                                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
+
                                )
         return JSONResponse(
             status_code=201, 
