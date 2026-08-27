@@ -34,6 +34,8 @@ async def text_orquestration(payload:ValidTextRouter):
         response = await request_llm(input=input, temperature=payload.temperature, 
                                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
                                verbosity=verbosity
+                               ) if payload.verbosity else await request_llm(input=input, temperature=payload.temperature, 
+                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
                                )
         return JSONResponse(
             status_code=201, 
