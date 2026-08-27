@@ -6,15 +6,20 @@ rota de text
 from src.schema.text import ValidTextRouter
 from src.service.orquestration_agent import request_llm, orquestration_model, api_key
 from src.service.optimizate_agent import optimizate_model
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+
 from fastapi.responses import JSONResponse
 import asyncio
 router_text = APIRouter(prefix="/text", tags=["text"])
 
 @router_text.post("/")
-async def text_orquestration(payload:ValidTextRouter):
+async def text_orquestration(payload:ValidTextRouter, request:Request):
 
     try:
+
+        user = request.headers["X-instance_user"]
+
+        
         
 
         if payload.optimizate and ((not "limit" in payload.optimizate.keys()) or 
@@ -24,13 +29,13 @@ async def text_orquestration(payload:ValidTextRouter):
 
 
             options, input =(await asyncio.gather(orquestration_model(input=payload.input, 
-                            verbosity=True if payload.verbosity else False), 
+                            verbosity=True if payload.verbosity else False, user=user), 
                             optimizate_model(input=payload.input, 
                             verbosity=payload.optimizate["verbosity"])))
 
         else:
 
-            options = await orquestration_model(input=payload.input, verbosity=True if payload.verbosity else False)
+            options = await orquestration_model(input=payload.input, verbosity=True if payload.verbosity else False, user=user)
             input = payload.input
         
 
