@@ -63,6 +63,8 @@ O projeto é **open source** e distribuído sob a [MIT License](LICENSE). Você 
 
 - uma única API para acessar diferentes modelos;
 - seleção automática baseada no conteúdo de cada requisição;
+- seleção opcional do nível de verbosidade da resposta final;
+- otimização opcional da entrada antes da execução;
 - separação entre a lógica de roteamento e a execução da tarefa;
 - identificação do modelo escolhido em todas as respostas de sucesso;
 - controle de tráfego compartilhado por meio do Redis;
@@ -85,15 +87,21 @@ O cliente envia um `POST` para `/text/`. O corpo contém a tarefa, as instruçõ
 
 Antes de encaminhar o payload, o middleware consulta o Redis. Existem dois escopos de controle: um contador compartilhado por toda a aplicação e outro associado ao identificador recebido no cabeçalho.
 
-### 3. Escolha do modelo
+### 3. Escolha do modelo e da verbosidade
 
-O serviço de orquestração carrega `orquestration.md` e combina suas regras com o campo `input`. O `gpt-5-nano` atua somente como classificador: sua resposta esperada é o identificador exato do modelo que deverá executar a tarefa.
+O serviço de orquestração analisa o campo `input` com o `gpt-5-nano`. Quando `verbosity` é `false`, ele usa `orquestration.md` e retorna somente o identificador do modelo. Quando `verbosity` é `true`, usa `orquestration_withverbosity.md` e retorna o modelo e o nível de detalhamento no formato `modelo|verbosity`.
 
-### 4. Execução e resposta
+Os níveis permitidos são `low`, `medium` e `high`. A escolha da verbosidade é independente da escolha do modelo: uma tarefa complexa pode pedir uma resposta curta, enquanto uma tarefa simples pode exigir uma explicação extensa.
 
-O modelo selecionado recebe o `prompt` como instrução e o `input` como conteúdo. O texto consolidado da Responses API é então devolvido em JSON, acompanhado pelo ID do modelo e pelo tipo de conteúdo.
+### 4. Otimização opcional
 
-Cada chamada bem-sucedida faz **duas inferências**: uma curta para roteamento e outra para execução. Essa separação permite alterar as regras de decisão sem acoplar o comportamento do modelo final ao código HTTP.
+Quando o objeto `optimizate` é enviado e seu limite permite o processamento, o `gpt-5.6-terra` analisa a entrada em paralelo com o orquestrador. O texto otimizado substitui o `input` somente na chamada ao modelo executor. Se a otimização não trouxer ganho, o agente pode devolver a entrada original.
+
+### 5. Execução e resposta
+
+O modelo selecionado recebe o `prompt` como instrução e a entrada original ou otimizada como conteúdo. Quando a seleção automática de verbosidade está habilitada, o nível escolhido é enviado à Responses API por meio de `text.verbosity`. O texto consolidado é devolvido em JSON, acompanhado pelo ID do modelo e pelo tipo de conteúdo.
+
+Sem otimização, cada chamada bem-sucedida faz **duas inferências**: uma curta para roteamento e outra para execução. Com otimização ativa, são feitas **três inferências**: roteamento e otimização em paralelo, seguidos pela execução.
 
 ```mermaid
 flowchart LR
@@ -101,8 +109,10 @@ flowchart LR
     API --> Middleware[Rate limit]
     Middleware <-->|contadores| Redis[(Redis)]
     Middleware --> Router[gpt-5-nano]
-    Prompt[(orquestration.md)] --> Router
-    Router -->|modelo escolhido| Executor[Modelo executor]
+    Middleware --> Optimizer[gpt-5.6-terra opcional]
+    Prompt[(prompts de orquestração)] --> Router
+    Router -->|modelo e verbosity opcional| Executor[Modelo executor]
+    Optimizer -->|entrada otimizada| Executor
     Executor -->|Responses API| OpenAI[OpenAI]
     OpenAI --> Result[output + model]
     Result --> Client
@@ -110,7 +120,7 @@ flowchart LR
 
 ## Seleção de modelos
 
-As regras de decisão ficam em `src/repository/prompt/orquestration.md`. O objetivo não é escolher o maior modelo disponível, e sim o modelo mais econômico que ainda consiga resolver a tarefa com segurança.
+As regras de decisão ficam em `src/repository/prompt/orquestration.md` e `src/repository/prompt/orquestration_withverbosity.md`. O objetivo não é escolher o maior modelo disponível, e sim o modelo mais econômico que ainda consiga resolver a tarefa com segurança.
 
 | Modelo | Quando é escolhido |
 |---|---|
@@ -137,11 +147,13 @@ O tamanho do texto não determina sozinho a complexidade. Uma entrada curta pode
 
 ### Papéis dos prompts
 
-O projeto trabalha com dois conjuntos de instruções diferentes:
+O projeto separa as instruções internas de roteamento, verbosidade e otimização das instruções fornecidas pelo cliente:
 
 | Origem | Destino | Função |
 |---|---|---|
-| `orquestration.md` | Modelo roteador | Define como analisar a tarefa e qual ID pode ser retornado. |
+| `orquestration.md` | Modelo roteador | Define como analisar a tarefa e retornar somente o ID do modelo. |
+| `orquestration_withverbosity.md` | Modelo roteador | Define como retornar o modelo e a verbosidade no formato `modelo|verbosity`. |
+| `optimizate.md` | Modelo otimizador | Decide se a entrada deve ser aprimorada e produz o texto que será enviado ao executor. |
 | Campo `prompt` da requisição | Modelo executor | Define o estilo, o formato e as regras da resposta final. |
 
 Essa divisão impede que as regras internas de seleção precisem ser repetidas por cada cliente da API.
@@ -153,10 +165,11 @@ O AiAgentSelector é um monólito modular. A API roda em um único serviço Fast
 | Camada | Arquivo ou diretório | Responsabilidade |
 |---|---|---|
 | Inicialização | `src/controller/init/main.py` | Cria a instância FastAPI, registra a política CORS, adiciona o middleware global e inclui os routers. Também exporta o objeto `app` consumido pelo Uvicorn. |
-| HTTP | `src/handles/text.py` | Expõe `/text/`, recebe o schema validado, solicita a escolha do modelo, executa a geração e monta o contrato JSON. |
+| HTTP | `src/handles/text.py` | Expõe `/text/`, coordena roteamento e otimização, aplica a verbosidade escolhida e monta o contrato JSON. |
 | Validação | `src/schema/text.py` | Declara os campos aceitos pela rota e delega a validação de tipos ao Pydantic. |
-| Serviço | `src/service/agent.py` | Conecta o prompt interno ao gateway OpenAI e mantém a lógica de seleção fora do handler HTTP. |
-| OpenAI | `src/utils/openai.py` | Cria o cliente, chama a Responses API, trata parâmetros específicos dos modelos e extrai `output_text`. |
+| Orquestração | `src/service/orquestration_agent.py` | Seleciona o prompt adequado e solicita ao `gpt-5-nano` o modelo, com verbosidade opcional. |
+| Otimização | `src/service/optimizate_agent.py` | Usa o `gpt-5.6-terra` para aprimorar a entrada quando essa etapa está habilitada. |
+| OpenAI | `src/utils/openai.py` | Cria o cliente, chama a Responses API, combina `max_output_tokens` e `text.verbosity`, trata parâmetros específicos dos modelos e extrai `output_text`. |
 | Cache | `src/repository/redis/` | Cria a conexão com o Redis e oferece operações de leitura, incremento e expiração para os contadores. |
 | Prompt | `src/repository/prompt/` | Localiza, lê e disponibiliza as regras completas de roteamento durante a inicialização. |
 | Configuração | `src/config/settings.py` | Procura o `.env`, carrega as variáveis e garante a presença das configurações obrigatórias. |
@@ -184,17 +197,25 @@ sequenceDiagram
     participant R as Redis
     participant H as Handler
     participant O as Orquestrador
+    participant P as Otimizador
     participant A as OpenAI
 
     C->>M: POST /text/ + X-instance_user
     M->>R: Consulta limites
     R-->>M: Contadores
     M->>H: Requisição permitida
-    H->>O: Seleciona modelo
-    O->>A: gpt-5-nano + regras de roteamento
-    A-->>O: ID do modelo
-    O-->>H: Modelo selecionado
-    H->>A: Modelo + prompt + input
+    par Seleção
+        H->>O: Solicita modelo e verbosity opcional
+        O->>A: gpt-5-nano + regras de roteamento
+        A-->>O: modelo ou modelo|verbosity
+        O-->>H: Opções selecionadas
+    and Otimização opcional
+        H->>P: Envia input
+        P->>A: gpt-5.6-terra + prompt de otimização
+        A-->>P: Input original ou otimizado
+        P-->>H: Input para execução
+    end
+    H->>A: Modelo + prompt + input + verbosity opcional
     A-->>H: output_text
     H-->>C: 201 Created
 ```
@@ -246,14 +267,17 @@ AiAgentSelector/
 │   │   ├── module.py
 │   │   ├── prompt/
 │   │   │   ├── file.py
-│   │   │   └── orquestration.md
+│   │   │   ├── optimizate.md
+│   │   │   ├── orquestration.md
+│   │   │   └── orquestration_withverbosity.md
 │   │   └── redis/
 │   │       ├── connect.py
 │   │       └── control.py
 │   ├── schema/
 │   │   └── text.py
 │   ├── service/
-│   │   └── agent.py
+│   │   ├── optimizate_agent.py
+│   │   └── orquestration_agent.py
 │   └── utils/
 │       └── openai.py
 └── tests/
@@ -353,7 +377,8 @@ curl http://localhost:8000/text/ \
   --data '{
     "prompt": "Responda de forma objetiva.",
     "input": "Explique em uma frase o que é uma API.",
-    "temperature": 0.2
+    "temperature": 0.2,
+    "verbosity": true
   }'
 ```
 
@@ -388,6 +413,17 @@ O mesmo identificador deve ser reutilizado por chamadas do mesmo consumidor quan
 | `input` | `string` | Sim | Conteúdo analisado pelo roteador e posteriormente processado pelo modelo escolhido. |
 | `temperature` | `float` | Sim | Controla a variação da saída quando o modelo oferece suporte ao parâmetro. |
 | `max_token` | `integer \| float \| null` | Não | Limita a saída e é repassado ao SDK como `max_output_tokens`. Sem valor, prevalece o padrão da API. |
+| `verbosity` | `boolean` | Não | Quando `true`, permite que o orquestrador escolha `low`, `medium` ou `high` para a resposta final. O padrão é `false`. |
+| `optimizate` | `object \| null` | Não | Habilita a otimização da entrada. Aceita `verbosity` e, opcionalmente, `limit`. O padrão é `null`. |
+
+O objeto `optimizate` usa os seguintes campos:
+
+| Campo | Tipo | Obrigatório ao otimizar | Descrição |
+|---|---|:---:|---|
+| `verbosity` | `"low" \| "medium" \| "high"` | Sim | Nível de detalhamento usado pelo agente otimizador. |
+| `limit` | `integer` | Não | A otimização ocorre quando o valor é maior ou igual ao número de caracteres de `input`. Sem o campo, a otimização é executada. |
+
+`verbosity` no nível principal e `optimizate.verbosity` têm funções diferentes. O primeiro habilita a seleção automática do detalhamento da resposta final; o segundo configura o detalhamento do texto produzido pelo agente otimizador.
 
 #### Exemplo
 
@@ -400,7 +436,12 @@ curl http://localhost:8000/text/ \
     "prompt": "Responda em português e use exemplos curtos.",
     "input": "Explique como funciona uma árvore binária de busca.",
     "temperature": 0.3,
-    "max_token": 800
+    "max_token": 800,
+    "verbosity": true,
+    "optimizate": {
+      "verbosity": "medium",
+      "limit": 500
+    }
   }'
 ```
 
@@ -443,18 +484,34 @@ O gateway mantém uma lista de modelos que não recebem `temperature`. Para esse
 
 Quando `max_token` é informado, seu valor é encaminhado como `max_output_tokens`. Esse limite cobre a quantidade máxima de tokens que a Responses API pode gerar para a solicitação.
 
+### Verbosidade da resposta
+
+Quando `verbosity` é `true`, o orquestrador escolhe `low`, `medium` ou `high` de acordo com a quantidade de detalhes útil para a tarefa. O valor selecionado é encaminhado ao modelo executor como `text.verbosity`.
+
+Esse parâmetro controla o nível geral de detalhes da saída e não representa esforço de raciocínio. O `prompt` continua responsável por requisitos específicos de idioma, estrutura, tom e conteúdo.
+
+### Otimização da entrada
+
+Quando `optimizate` é informado, o agente otimizador recebe o `input` original. Se a tarefa puder se beneficiar de instruções mais claras e estruturadas, ele produz uma versão aprimorada; caso contrário, devolve o texto sem alterações.
+
+Se `limit` estiver presente e for menor que o número de caracteres do `input`, a etapa é ignorada. O roteamento sempre analisa a entrada original, enquanto o modelo executor recebe o resultado da otimização quando ela é executada.
+
 ## Personalização
 
 ### Alterar as regras do roteador
 
-Edite `src/repository/prompt/orquestration.md`. O arquivo concentra os perfis dos modelos, exemplos, critérios de escalonamento e o formato obrigatório da resposta. Como o conteúdo é carregado na inicialização, reinicie a aplicação depois de modificá-lo.
+Edite `src/repository/prompt/orquestration.md` para o fluxo que retorna somente o modelo e `src/repository/prompt/orquestration_withverbosity.md` para o fluxo que também seleciona a verbosidade. Os arquivos concentram os perfis dos modelos, exemplos, critérios de escalonamento e o formato obrigatório da resposta. Como o conteúdo é carregado na inicialização, reinicie a aplicação depois de modificá-lo.
+
+### Alterar as regras do otimizador
+
+Edite `src/repository/prompt/optimizate.md`. Esse arquivo define quando a otimização é útil, como a entrada deve ser reestruturada e em quais situações o texto original deve ser preservado.
 
 ### Adicionar um modelo
 
 Para ampliar o conjunto disponível:
 
 1. adicione o ID e seu perfil ao prompt de orquestração;
-2. atualize os exemplos e a ordem de prioridade;
+2. replique a alteração no prompt com verbosidade e atualize os exemplos e a ordem de prioridade;
 3. verifique se o modelo aceita `temperature` em `src/utils/openai.py`;
 4. confirme que a conta associada à chave possui acesso ao modelo;
 5. exercite tarefas simples, médias e complexas para validar o novo roteamento.

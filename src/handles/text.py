@@ -15,22 +15,46 @@ router_text = APIRouter(prefix="/text", tags=["text"])
 async def text_orquestration(payload:ValidTextRouter):
 
     try:
+        
 
-        if (payload.optimizate and payload.optimizate_limit is None) or (payload.optimizate and payload.optimizate_limit is not None 
-                                  and payload.optimizate_limit>=len(payload.input.split())):
+        if payload.optimizate and ((not "limit" in payload.optimizate.keys()) or 
+                                   (payload.optimizate["limit"]>=len(payload.input))):
+
+            
 
 
-            model, input =await asyncio.gather(orquestration_model(input=payload.input), optimizate_model(input=payload.input))
+            options, input =(await asyncio.gather(orquestration_model(input=payload.input, 
+                            verbosity=True if payload.verbosity else False), 
+                            optimizate_model(input=payload.input, 
+                            verbosity=payload.optimizate["verbosity"])))
 
         else:
 
-            model = await orquestration_model(input=payload.input)
+            options = await orquestration_model(input=payload.input, verbosity=True if payload.verbosity else False)
             input = payload.input
-                                               
+        
 
-        response = await request_llm(input=input, temperature=payload.temperature, 
-                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model
-                               )
+
+        if payload.verbosity:
+
+
+            options = options.split("|")
+            model, verbosity = options[0], options[1]
+            
+            response = await request_llm(input=input, temperature=payload.temperature, 
+                                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
+                                verbosity=verbosity
+                                )
+
+        else:
+
+            model = options
+
+            response = await request_llm(
+                input=input, temperature=payload.temperature, 
+                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model)
+
+        
         return JSONResponse(
             status_code=201, 
             content={"output": response, "model": model, "type": "text"}

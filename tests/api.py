@@ -13,10 +13,10 @@ headers = {
 
 payload = {
     "temperature": 0.5,
-    "input": "Quanto 1+1 é?",
+    "input": "Me ensine redis",
     "prompt": "Seje um professor",
-    "optimizate": True,
-    "optimizate_limit": 50
+    "optimizate": {"verbosity": "medium", "limit": 20},
+    
 }
 
 start = perf_counter()
