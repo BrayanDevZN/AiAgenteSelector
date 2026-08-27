@@ -16,7 +16,9 @@ async def text_orquestration(payload:ValidTextRouter):
 
     try:
 
-        if payload.optimizate:
+        if (payload.optimizate and payload.optimizate_limit is None) or (payload.optimizate and payload.optimizate_limit is not None 
+                                  and payload.optimizate_limit>=len(payload.input.split())):
+
 
             model, input =await asyncio.gather(orquestration_model(input=payload.input), optimizate_model(input=payload.input))
 

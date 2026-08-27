@@ -11,3 +11,4 @@ class ValidTextRouter(BaseModel):
     temperature:float
     max_token: float|int|None = Field(default=None)
     optimizate: bool = Field(default=False)
+    optimizate_limit: int|None = Field(default=None)
