@@ -12,7 +12,7 @@ async def request_llm(verbosity:Literal["high", "medium", "low"],model:str, inpu
 
     try:
 
-        logger.info(f"Enviando requisição pra open ai usando modelo {model}... ")
+        logger.info(f"Enviando requisição pra open ai usando modelo {model} com o nivel de verbosidade {verbosity}... ")
 
         NO_TEMPERATURE_MODELS = [
     "gpt-5",

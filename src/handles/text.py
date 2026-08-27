@@ -20,16 +20,20 @@ async def text_orquestration(payload:ValidTextRouter):
                                   and payload.optimizate_limit>=len(payload.input.split())):
 
 
-            model, input =await asyncio.gather(orquestration_model(input=payload.input), optimizate_model(input=payload.input))
+            options, input =await asyncio.gather(orquestration_model(input=payload.input), optimizate_model(input=payload.input))
 
         else:
 
-            model = await orquestration_model(input=payload.input)
+            options = await orquestration_model(input=payload.input)
             input = payload.input
-                                               
 
+
+        options = options.split("|")
+        model, verbosity = options[0], options[1]
+        
         response = await request_llm(input=input, temperature=payload.temperature, 
-                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model
+                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
+                               verbosity=verbosity
                                )
         return JSONResponse(
             status_code=201, 
