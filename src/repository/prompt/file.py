@@ -11,7 +11,10 @@ class FilePrompt:
 
     def __init__(self)-> None:
 
-        self.dir = [Path(__file__).resolve().parent / "orquestration.md", Path(__file__).resolve().parent / "optimizate.md"]
+        self.dir = [Path(__file__).resolve().parent / "orquestration_withverbosity.md", 
+                    Path(__file__).resolve().parent / "optimizate.md",
+                    Path(__file__).resolve().parent / "orquestration.md"
+                    ]
         
 
     #Confere se o arquivo existe
@@ -70,6 +73,7 @@ instance = FilePrompt()
 prompts = instance.get()
 prompt_orquestration = prompts[0]
 prompt_optimizate = prompts[1]
+prompt_orq_verbosity = prompts[2]
 
 
 
