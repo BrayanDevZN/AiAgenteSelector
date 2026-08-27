@@ -7,8 +7,8 @@ faz a requisição pro modelo da open ai
 
 
 from openai import OpenAI
-
-async def request_llm(model:str, input:str, temperature:float, prompt:str, api_key:str, max_token:int|None|float = None) -> str:
+from typing import Literal
+async def request_llm(verbosity:Literal["high", "medium", "low"],model:str, input:str, temperature:float, prompt:str, api_key:str, max_token:int|None|float = None) -> str:
 
     try:
 
