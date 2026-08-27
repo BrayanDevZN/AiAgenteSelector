@@ -8,11 +8,12 @@ faz a requisição pro modelo da open ai
 
 from openai import OpenAI
 from typing import Literal
-async def request_llm(verbosity:Literal["high", "medium", "low"],model:str, input:str, temperature:float, prompt:str, api_key:str, max_token:int|None|float = None) -> str:
+async def request_llm(model:str, input:str, temperature:float, prompt:str, 
+                      api_key:str, max_token:int|None|float = None, verbosity:Literal["high", "medium", "low"]=None) -> str:
 
     try:
 
-        logger.info(f"Enviando requisição pra open ai usando modelo {model} com o nivel de verbosidade {verbosity}... ")
+        
 
         NO_TEMPERATURE_MODELS = [
     "gpt-5",
@@ -27,28 +28,82 @@ async def request_llm(verbosity:Literal["high", "medium", "low"],model:str, inpu
         client = OpenAI(api_key=api_key)
 
 
-        if not model in NO_TEMPERATURE_MODELS:
 
-            
+        if max_token is not None and verbosity is not None:
+
+            logger.info(f"Enviando requisição pra open ai usando modelo {model} com o nivel de verbosidade {verbosity} e o numero maximo de tokens de saida de {max_token}... ")
+
 
             response = client.responses.create(
-                model=model, temperature=temperature, instructions=prompt, input=input
-            ) if max_token is None else client.responses.create(
-                model=model, temperature=temperature, instructions=prompt, input=input, max_output_tokens=max_token
-            )
+                model=model,
+                input=input,
+                temperature=temperature,
+                instructions=prompt,
+                max_output_tokens=max_token,
+                text={"verbosity":verbosity}
+
+
+            ) if not model in NO_TEMPERATURE_MODELS else client.responses.create(
+                model=model,
+                input=input,
+                instructions=prompt,
+                max_output_tokens=max_token,
+                text={"verbosity":verbosity})
+
+        elif max_token is not None and verbosity is None:
+
+            logger.info(f"Enviando requisição pra open ai usando modelo {model} com o numero maximo de tokens de saida de {max_token}... ")
+
+            response = client.responses.create(
+                            model=model,
+                            input=input,
+                            temperature=temperature,
+                            instructions=prompt,
+                            max_output_tokens=max_token
+            
+                        ) if not model in NO_TEMPERATURE_MODELS else client.responses.create(
+                            model=model,
+                            input=input,
+                            instructions=prompt,
+                            max_output_tokens=max_token)
+
+        elif max_token is None and verbosity is not None:
+
+            logger.info(f"Enviando requisição pra open ai usando modelo {model} com o nivel de verbosidade de {verbosity}... ")
+
+            response = client.responses.create(
+                            model=model,
+                            input=input,
+                            temperature=temperature,
+                            instructions=prompt,
+                        
+                            text={"verbosity":verbosity}
+            
+            
+                        ) if not model in NO_TEMPERATURE_MODELS else client.responses.create(
+                            model=model,
+                            input=input,
+                            instructions=prompt,
+                            text={"verbosity":verbosity})
+
 
         else:
 
-            logger.warning(f"model {model} not support param temperature")
+            logger.info(f"Enviando requisição pro modelo {model}...")
 
             response = client.responses.create(
-                            model=model,  instructions=prompt, input=input, text={"verbosity":verbosity}
-                        ) if max_token is None else client.responses.create(
-                            model=model,  instructions=prompt, input=input, max_output_tokens=max_token, text={"verbosity":verbosity}
-                        )
-
-
-
+                                        model=model,
+                                        input=input,
+                                        temperature=temperature,
+                                        instructions=prompt,
+                        
+                        
+                                    ) if not model in NO_TEMPERATURE_MODELS else client.responses.create(
+                                        model=model,
+                                        input=input,
+                                        instructions=prompt,
+                                        )
+            
         return response.output_text
 
     except Exception as e:
