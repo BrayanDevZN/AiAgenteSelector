@@ -21,25 +21,35 @@ async def text_orquestration(payload:ValidTextRouter):
                                    (payload.optimizate["limit"]>=len(payload.input))):
 
 
-            options, input =(await asyncio.gather(orquestration_model(input=payload.input), 
-                            optimizate_model(input=payload.input, verbosity=payload.optimizate["verbosity"])))
+            options, input =(await asyncio.gather(orquestration_model(input=payload.input, 
+                            verbosity=True if payload.verbosity else False), 
+                            optimizate_model(input=payload.input, 
+                            verbosity=payload.optimizate["verbosity"])))
 
         else:
 
-            options = await orquestration_model(input=payload.input)
+            options = await orquestration_model(input=payload.input, verbosity=True if payload.verbosity else False)
             input = payload.input
 
 
-        options = options.split("|")
-        model, verbosity = options[0], options[1]
-        
-        response = await request_llm(input=input, temperature=payload.temperature, 
-                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
-                               verbosity=verbosity
-                               ) if payload.verbosity else await request_llm(input=input, temperature=payload.temperature, 
-                               max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
+        if payload.verbosity:
 
-                               )
+
+            options = options.split("|")
+            model, verbosity = options[0], options[1]
+            
+            response = await request_llm(input=input, temperature=payload.temperature, 
+                                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model,
+                                verbosity=verbosity
+                                )
+
+        else:
+
+            response = await request_llm(
+                input=input, temperature=payload.temperature, 
+                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model)
+
+        
         return JSONResponse(
             status_code=201, 
             content={"output": response, "model": model, "type": "text"}
