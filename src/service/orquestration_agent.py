@@ -18,7 +18,8 @@ async def orquestration_model(input:str) -> str:
         temperature=0.1,
         prompt=prompt_orquestration,
         api_key=api_key,
-        input=input
+        input=input,
+        verbosity="low"
         
     )
 

@@ -18,7 +18,9 @@ async def optimizate_model(input:str) -> str:
         temperature=0.1,
         prompt=prompt_optimizate,
         api_key=api_key,
-        input=input
+        input=input,
+        verbosity="high"
+        
         
     )
 
