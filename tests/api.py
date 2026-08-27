@@ -1,15 +1,34 @@
 """
-Testa as rotas da api
+Testa optimizate_limit
 """
 
+from time import perf_counter
 import requests
-url = "http://127.0.0.1:8000/text"
 
+url = "http://127.0.0.1:8000/text/"
 
-payload = {
-    "temperature":0.5, "input": "Oi, o que voce faz?", "prompt": "Faça uma calculadora"
+headers = {
+    "X-instance_user": "Brayan"
 }
 
-response = requests.post(url=url, json=payload, headers={"X-instance_user": "Brayan"}).json()
+payload = {
+    "temperature": 0.5,
+    "input": "Quanto 1+1 é?",
+    "prompt": "Seje um professor",
+    "optimizate": True,
+    "optimizate_limit": 50
+}
 
-print(response)
+start = perf_counter()
+
+response = requests.post(
+    url=url,
+    json=payload,
+    headers=headers
+)
+
+elapsed = perf_counter() - start
+
+print(f"Status: {response.status_code}")
+print(response.json()["output"])
+print(f"\nTempo: {elapsed:.3f}s")

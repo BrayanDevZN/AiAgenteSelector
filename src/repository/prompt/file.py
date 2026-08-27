@@ -3,41 +3,83 @@ from src.logs.log import logger
 """
 Pega o prompt
 """
+import os
+from pathlib import Path
 
 
-try:
+class FilePrompt:
 
-    from pathlib import Path
+    def __init__(self)-> None:
+
+        self.dir = [Path(__file__).resolve().parent / "orquestration.md", Path(__file__).resolve().parent / "optimizate.md"]
+        
+
+    #Confere se o arquivo existe
+    def _exists(self, path:str) -> None:
+
+        if not os.path.exists(path):
+            msg = f"Expeted {path}"
+
+            logger.error(msg)
+            raise FileNotFoundError(msg)
+
+    #Le o arquivo do prompt
+    def _read(self, path:str) -> str|None:
+
+        with open(path, "r", encoding="utf-8") as f:
+
+            return f.read()
+
+    #Confere se o arquivo é vazio
+    def _len(self, path:str) -> None:
+
+        if len(path) <=0:
+
+            msg = f"Expeted prompt in {path}"
+            logger.error(msg)
+            raise ValueError(msg)
+
+    #insere o prompt na lista
+    def _run(self) -> None:
+
+        for number, path in enumerate(self.dir):
+
+            self._exists(path=path)
+
+            prompt = self._read(path=path)
+
+            self._len(path=prompt)
+
+            self.dir[number] = prompt
+
+
+    #Executa run e retorna a lista dos prompts
+    def get(self) -> list:
+
+        try:
+
+            self._run()
+            return self.dir
+
+        except Exception as e:
+
+            raise(e)
+
+
+instance = FilePrompt()
+prompts = instance.get()
+prompt_orquestration = prompts[0]
+prompt_optimizate = prompts[1]
 
 
 
-    #Caminho onde o prompt ta salvo
-    BASE_DIR = Path(__file__).resolve().parent / "orquestration.md"
 
-
-
-    #Confere se o caminho existe
-    import os
-    if not os.path.exists(BASE_DIR):
-
-        raise FileNotFoundError(f"Expeted {BASE_DIR}")
-
-
-    with open(BASE_DIR, "r", encoding="utf-8") as f:
-
-        prompt = f.read()
-
-    if len(prompt) == 0:
-        msg = "Expeted prompt"
-        logger.error(msg)
-
-        raise ValueError(msg)
-
-
-except Exception as e:
-
-    logger.error(e)
-    raise Exception(e)
 
     
 
+    
+
+
+
+    
+        

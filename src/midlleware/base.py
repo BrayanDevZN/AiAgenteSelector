@@ -44,7 +44,7 @@ class Midlleware(BaseHTTPMiddleware):
             )
 
         else:
-            instance.set(name="global_rate_limit")
+            await instance.set(name="global_rate_limit")
 
 
         #usuario que faz a requisição
@@ -61,6 +61,10 @@ class Midlleware(BaseHTTPMiddleware):
                 status_code=429,
                 content={"error":f"Exceded rate limit of user {user}"}
             )
+
+        else:
+
+            await instance.set(name=f"rate_limit:{user}")
 
         return await call_next(request)
 

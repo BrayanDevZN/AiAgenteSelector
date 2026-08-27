@@ -2,10 +2,10 @@
 Testes de repository
 """
 if __name__ == "__main__":
-    from src.repository.module import prompt, ControlCache
+    from src.repository.module import prompt_orquestration, prompt_optimizate, ControlCache
 
 
-    print(prompt)
+    print(prompt_orquestration, prompt_optimizate)
 
 
 
