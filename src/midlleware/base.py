@@ -44,7 +44,7 @@ class Midlleware(BaseHTTPMiddleware):
             )
 
         else:
-            await instance.set(name="global_rate_limit")
+            await instance.Iset(name="global_rate_limit")
 
 
         #usuario que faz a requisição
@@ -64,7 +64,7 @@ class Midlleware(BaseHTTPMiddleware):
 
         else:
 
-            await instance.set(name=f"rate_limit:{user}")
+            await instance.Iset(name=f"rate_limit:{user}")
 
         return await call_next(request)
 
