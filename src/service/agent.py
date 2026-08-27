@@ -8,11 +8,11 @@ from src.utils.openai import request_llm
 from src.repository.module import prompt
 from src.config.settings import api_key
 
-def orquestration_model(input:str) -> str:
+async def orquestration_model(input:str) -> str:
 
     logger.info("Executando agente orquestrador...")
 
-    return request_llm(
+    return await request_llm(
         
         model="gpt-5-nano",
         temperature=0.1,

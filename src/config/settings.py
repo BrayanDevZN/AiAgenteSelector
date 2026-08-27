@@ -23,8 +23,7 @@ try:
     load_dotenv(BASE_DIR)
 
 
-    port = os.getenv("port")
-    host = os.getenv("host")
+    
     rate_limit = os.getenv("rate_limit")
     global_rate_limit = os.getenv("global_rate_limit")
     api_key = os.getenv("api_key")
@@ -42,10 +41,6 @@ try:
         raise ValueError("Expeted enviroins rate limit")
     
     
-
-    if port is None or host is None:
-
-        raise ValueError("Expeted enviroin port and host")
 
 except Exception as e:
 

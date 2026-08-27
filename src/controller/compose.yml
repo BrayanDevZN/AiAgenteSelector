@@ -1,0 +1,22 @@
+services:
+  ai_agent:
+    build:
+      dockerfile: src/controller/depends/dockerfile
+      context: ../..
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - redis
+    
+    env_file:
+      - ../config/.env
+
+  redis:
+    image: redis:latest
+
+
+
+  
+    

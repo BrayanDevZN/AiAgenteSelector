@@ -32,7 +32,7 @@ class Midlleware(BaseHTTPMiddleware):
         #Confere se o rate limite global excedeu
 
         logger.info("Conferindo o  limite de requisições global...")
-        global_instance = instance.get(name="global_rate_limit")
+        global_instance = await instance.get(name="global_rate_limit")
 
         if global_instance is not None and global_instance >= global_rate_limit:
 
@@ -51,13 +51,13 @@ class Midlleware(BaseHTTPMiddleware):
         user = request.headers["X-instance_user"]
         logger.info(f"Conferindo o limite de requisições do usuario {user}...")
 
-        user_instance = instance.get(name=f"rate_limit:{user}")
+        user_instance = await instance.get(name=f"rate_limit:{user}")
 
         if user_instance is not None and user_instance >= rate_limit:
 
             logger.warning(f"Limite de requisições do usuario {user} excedido")
 
-            JSONResponse(
+            return JSONResponse(
                 status_code=429,
                 content={"error":f"Exceded rate limit of user {user}"}
             )

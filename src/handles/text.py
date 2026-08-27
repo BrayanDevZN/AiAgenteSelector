@@ -18,9 +18,9 @@ async def text_orquestration(payload:ValidTextRouter):
 
     try:
 
-        model = orquestration_model(input=payload.input)
+        model = await  orquestration_model(input=payload.input)
 
-        response = request_llm(input=payload.input, temperature=payload.temperature, 
+        response = await request_llm(input=payload.input, temperature=payload.temperature, 
                                max_token=payload.max_token, prompt=payload.prompt, api_key=api_key, model=model
                                )
         return JSONResponse(

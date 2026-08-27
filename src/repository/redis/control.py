@@ -12,7 +12,7 @@ class ControlCache:
         
 
     #Cria o dado
-    def set(self, name:str, time:str|None = None) -> dict:
+    async def set(self, name:str, time:str|None = None) -> dict:
 
         try:
 
@@ -32,7 +32,7 @@ class ControlCache:
             raise Exception(e)
 
     #LE
-    def get(self, name:str) -> None|int:
+    async def get(self, name:str) -> None|int:
 
         try:
 
