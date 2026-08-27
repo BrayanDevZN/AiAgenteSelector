@@ -1,17 +1,7 @@
-<p align="center">
-  <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&amp;height=210&amp;color=0:0B1020,45:412991,100:009688&amp;text=AiAgentSelector&amp;fontColor=FFFFFF&amp;fontSize=48&amp;fontAlignY=38&amp;desc=Intelligent%20AI%20Model%20Routing&amp;descAlignY=58&amp;animation=fadeIn" alt="AiAgentSelector — Intelligent AI Model Routing" />
-</p>
+<h1 align="center">AiAgentSelector</h1>
 
 <p align="center">
-  <strong>Analisa a solicitação, seleciona o modelo de IA mais adequado e executa a tarefa com eficiência.</strong>
-</p>
-
-<p align="center">
-  <a href="#sobre-o-projeto">Visão geral</a>&nbsp;&nbsp;•&nbsp;&nbsp;
-  <a href="#arquitetura">Arquitetura</a>&nbsp;&nbsp;•&nbsp;&nbsp;
-  <a href="#como-executar">Instalação</a>&nbsp;&nbsp;•&nbsp;&nbsp;
-  <a href="#referência-da-api">API</a>&nbsp;&nbsp;•&nbsp;&nbsp;
-  <a href="#roadmap-recomendado">Roadmap</a>
+  Roteamento inteligente de modelos para aplicações que usam a OpenAI Responses API.
 </p>
 
 <p align="center">
@@ -36,148 +26,84 @@
   <a href="https://docs.pydantic.dev/">
     <img src="https://img.shields.io/badge/Pydantic-2.13.4-FFF0F6?style=for-the-badge&amp;logo=pydantic&amp;logoColor=E92063" alt="Pydantic 2.13.4" />
   </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-F0FFF4?style=for-the-badge&amp;logo=opensourceinitiative&amp;logoColor=3DA639" alt="MIT License" />
+  </a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/arquitetura-monólito_modular-7C3AED?style=flat-square" alt="Arquitetura: monólito modular" />
-  <img src="https://img.shields.io/badge/API-REST-2563EB?style=flat-square" alt="API REST" />
-  <img src="https://img.shields.io/badge/status-MVP-F59E0B?style=flat-square" alt="Status: MVP" />
+  <a href="#como-funciona">Como funciona</a> ·
+  <a href="#arquitetura">Arquitetura</a> ·
+  <a href="#como-executar">Como executar</a> ·
+  <a href="#api">API</a> ·
+  <a href="#contribuindo">Contribuindo</a>
 </p>
 
 ---
 
-## Sumário
-
-- [Sobre o projeto](#sobre-o-projeto)
-- [Principais recursos](#principais-recursos)
-- [Arquitetura](#arquitetura)
-- [Fluxo de uma requisição](#fluxo-de-uma-requisição)
-- [Estratégia de seleção de modelos](#estratégia-de-seleção-de-modelos)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Tecnologias](#tecnologias)
-- [Como executar](#como-executar)
-- [Referência da API](#referência-da-api)
-- [Rate limiting](#rate-limiting)
-- [Logs e observabilidade](#logs-e-observabilidade)
-- [Testes](#testes)
-- [Decisões arquiteturais](#decisões-arquiteturais)
-- [Estado atual e pontos de atenção](#estado-atual-e-pontos-de-atenção)
-- [Segurança](#segurança)
-- [Roadmap recomendado](#roadmap-recomendado)
-- [Licença](#licença)
-
 ## Sobre o projeto
 
-O **AiAgentSelector** é uma API HTTP construída com FastAPI para realizar roteamento inteligente entre modelos de inteligência artificial.
+Usar o modelo mais poderoso para toda solicitação funciona, mas nem sempre faz sentido. Tarefas simples acabam custando mais e levando mais tempo do que deveriam; tarefas difíceis, por outro lado, precisam de capacidade suficiente para não comprometer o resultado.
 
-Em vez de enviar todas as solicitações para um único modelo, o sistema utiliza um agente orquestrador para avaliar a tarefa recebida. Esse agente considera complexidade, profundidade de raciocínio, quantidade de restrições, natureza da tarefa e relação entre custo e capacidade. Depois da classificação, a API envia a mesma entrada ao modelo selecionado, usando as instruções fornecidas pelo consumidor da API.
+O **AiAgentSelector** fica entre o cliente e a API da OpenAI para resolver esse problema. Ele analisa cada entrada, escolhe um modelo compatível com a dificuldade da tarefa e só então executa a solicitação.
 
-Cada requisição bem-sucedida realiza, portanto, duas inferências:
+O projeto é **open source** e distribuído sob a [MIT License](LICENSE). Você pode usar, modificar e distribuir o código, desde que preserve o aviso de copyright e o texto da licença.
 
-1. **Seleção:** o `gpt-5-nano` analisa a entrada e retorna o identificador de um modelo permitido.
-2. **Execução:** o modelo selecionado processa a entrada com o prompt, a temperatura e o limite de tokens informados pelo cliente.
+## Como funciona
 
-O resultado contém tanto o texto produzido quanto o modelo utilizado, tornando o roteamento visível para o consumidor.
+Uma requisição completa passa por quatro etapas:
 
-> [!NOTE]
-> **Em uma frase:** o AiAgentSelector funciona como uma camada inteligente entre o cliente e a OpenAI, escolhendo capacidade suficiente para cada tarefa sem usar sempre o modelo mais caro.
+1. o middleware verifica o identificador enviado em `X-instance_user` e consulta os limites no Redis;
+2. o `gpt-5-nano` recebe a entrada e escolhe um dos modelos permitidos;
+3. o modelo escolhido recebe o prompt e a entrada do cliente;
+4. a API devolve o texto gerado e informa qual modelo foi usado.
 
-## Principais recursos
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <strong>🎯 Roteamento inteligente</strong><br />
-      Seleciona o modelo com base na complexidade real da solicitação.
-    </td>
-    <td align="center" width="33%">
-      <strong>💰 Eficiência de custo</strong><br />
-      Prioriza o modelo mais econômico capaz de executar a tarefa.
-    </td>
-    <td align="center" width="33%">
-      <strong>⚡ API assíncrona</strong><br />
-      Expõe uma interface HTTP validada com FastAPI e Pydantic.
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <strong>🧠 OpenAI Responses API</strong><br />
-      Centraliza seleção e geração por meio de um único gateway.
-    </td>
-    <td align="center" width="33%">
-      <strong>🛡️ Controle de tráfego</strong><br />
-      Projeta limites globais e individuais usando Redis.
-    </td>
-    <td align="center" width="33%">
-      <strong>🐳 Pronto para contêiner</strong><br />
-      Inicializa API e cache de forma integrada com Docker Compose.
-    </td>
-  </tr>
-</table>
-
-Além disso, o projeto oferece CORS configurável, logs no terminal e em arquivo e uma separação clara entre configuração, transporte HTTP, serviço, repositório e integrações externas.
-
-## Arquitetura
-
-### Visão geral
-
-O projeto segue um **monólito modular em camadas**. A aplicação é implantada como um único serviço FastAPI, enquanto Redis e OpenAI são dependências externas.
+Isso significa que cada chamada bem-sucedida faz **duas inferências**: uma curta para roteamento e outra para execução.
 
 ```mermaid
 flowchart LR
-    Client[Cliente HTTP] -->|POST /text/| API[FastAPI]
-    API --> CORS[CORS]
-    CORS --> MW[Middleware de rate limit]
-    MW -->|consulta contadores| Redis[(Redis)]
-    MW --> Schema[Validação Pydantic]
-    Schema --> Route[Handler /text/]
-    Route --> Orchestrator[Serviço orquestrador]
-    Orchestrator -->|1ª inferência| RouterModel[gpt-5-nano]
-    RouterModel -->|ID do modelo| Orchestrator
-    Orchestrator --> Gateway[Gateway OpenAI]
-    Gateway -->|2ª inferência| SelectedModel[Modelo selecionado]
-    SelectedModel --> Gateway
-    Gateway --> Route
-    Route -->|JSON: output + model + type| Client
-
-    Prompt[(orquestration.md)] --> Orchestrator
-    Env[(Variáveis de ambiente)] --> API
-    Env --> Gateway
+    Client[Cliente] -->|POST /text/| API[FastAPI]
+    API --> Middleware[Rate limit]
+    Middleware <-->|contadores| Redis[(Redis)]
+    Middleware --> Router[gpt-5-nano]
+    Prompt[(orquestration.md)] --> Router
+    Router -->|modelo escolhido| Executor[Modelo executor]
+    Executor -->|Responses API| OpenAI[OpenAI]
+    OpenAI --> Result[output + model]
+    Result --> Client
 ```
 
-### Componentes e responsabilidades
+## Seleção de modelos
 
-| Camada | Localização | Responsabilidade |
+As regras de decisão ficam em `src/repository/prompt/orquestration.md`. O objetivo não é escolher o maior modelo disponível, e sim o modelo mais econômico que ainda consiga resolver a tarefa com segurança.
+
+| Modelo | Quando é escolhido |
+|---|---|
+| `gpt-5.6-luna` | Tarefas curtas, previsíveis e de baixa complexidade. |
+| `gpt-5.6-terra` | Trabalho de complexidade moderada que pede equilíbrio entre custo e capacidade. |
+| `gpt-5.6-sol` | Problemas ambíguos, profundos ou com várias restrições relacionadas. |
+| `gpt-5.3-codex` | Implementação, alteração e depuração de código. |
+
+O roteador deve responder somente com o ID exato de um desses modelos. Os modelos também precisam estar disponíveis para a conta e para o projeto associados à chave da API.
+
+## Arquitetura
+
+O AiAgentSelector é um monólito modular. A API roda em um único serviço FastAPI, com Redis e OpenAI como dependências externas.
+
+| Camada | Arquivo ou diretório | Responsabilidade |
 |---|---|---|
-| Bootstrap | `src/controller/init/main.py` | Cria a instância FastAPI, registra CORS, middleware e rotas. |
-| Controller/infraestrutura | `src/controller/` | Define a composição dos contêineres, imagem da aplicação e comando de inicialização. |
-| Handler HTTP | `src/handles/text.py` | Implementa `POST /text/`, coordena seleção e execução e monta a resposta JSON. |
-| Middleware | `src/midlleware/base.py` | Exige o cabeçalho de usuário e consulta os limites global e individual. |
-| Schema | `src/schema/text.py` | Valida o corpo da requisição com Pydantic. |
-| Serviço | `src/service/agent.py` | Executa o agente orquestrador com o prompt de roteamento. |
-| Gateway de IA | `src/utils/openai.py` | Encapsula a criação de respostas pelo SDK da OpenAI. |
-| Repositório Redis | `src/repository/redis/` | Mantém a conexão e as operações dos contadores temporários. |
-| Repositório de prompt | `src/repository/prompt/` | Carrega e valida o prompt de orquestração em tempo de importação. |
-| Configuração | `src/config/settings.py` | Carrega e valida as variáveis de ambiente obrigatórias. |
-| Observabilidade | `src/logs/log.py` | Configura logs para `stdout` e `src/logs/app.log`. |
+| Inicialização | `src/controller/init/main.py` | Cria a aplicação, registra CORS, middleware e rotas. |
+| HTTP | `src/handles/text.py` | Recebe a chamada, coordena as inferências e monta a resposta. |
+| Validação | `src/schema/text.py` | Define e valida o corpo aceito pelo endpoint. |
+| Serviço | `src/service/agent.py` | Executa a etapa de escolha do modelo. |
+| OpenAI | `src/utils/openai.py` | Centraliza as chamadas à Responses API. |
+| Cache | `src/repository/redis/` | Lê e incrementa contadores temporários no Redis. |
+| Prompt | `src/repository/prompt/` | Carrega as regras de roteamento. |
+| Configuração | `src/config/settings.py` | Carrega e valida as variáveis de ambiente. |
+| Logs | `src/logs/log.py` | Envia eventos para o terminal e para arquivo. |
+| Infraestrutura | `src/controller/` | Contém Dockerfile, Compose e dependências fixadas. |
 
-### Dependências externas
-
-```mermaid
-flowchart TB
-    subgraph Compose[Docker Compose]
-        App[ai_agent<br/>FastAPI + Uvicorn]
-        Cache[redis<br/>Redis Server]
-        App -->|redis:6379| Cache
-    end
-
-    App -->|HTTPS / Responses API| OpenAI[OpenAI API]
-    Consumer[Aplicação cliente] -->|localhost:8000| App
-```
-
-O serviço `ai_agent` é exposto na porta `8000`. O Redis permanece acessível apenas pela rede interna do Compose, pois não possui porta publicada para o host.
-
-## Fluxo de uma requisição
+### Fluxo interno
 
 ```mermaid
 sequenceDiagram
@@ -187,77 +113,44 @@ sequenceDiagram
     participant R as Redis
     participant H as Handler
     participant O as Orquestrador
-    participant A as OpenAI API
+    participant A as OpenAI
 
     C->>M: POST /text/ + X-instance_user
-    M->>M: Valida presença do cabeçalho
-    M->>R: GET global_rate_limit
-    R-->>M: Contador global
-    M->>R: GET rate_limit:{user}
-    R-->>M: Contador do usuário
-    M->>H: Encaminha requisição permitida
-    H->>O: orquestration_model(input)
-    O->>A: Responses API com gpt-5-nano
-    A-->>O: Nome exato do modelo
+    M->>R: Consulta limites
+    R-->>M: Contadores
+    M->>H: Requisição permitida
+    H->>O: Seleciona modelo
+    O->>A: gpt-5-nano + regras de roteamento
+    A-->>O: ID do modelo
     O-->>H: Modelo selecionado
-    H->>A: Responses API com modelo + prompt + input
+    H->>A: Modelo + prompt + input
     A-->>H: output_text
-    H-->>C: 201 + output + model + type
+    H-->>C: 201 Created
 ```
 
-Detalhamento do processamento:
+### Estado da aplicação
 
-1. O cliente envia um `POST` para `/text/` com o cabeçalho `X-instance_user`.
-2. O middleware rejeita a chamada se o cabeçalho não estiver presente.
-3. Os contadores global e individual são consultados no Redis.
-4. O Pydantic valida `prompt`, `input`, `temperature` e, quando presente, `max_token`.
-5. O prompt estático de `orquestration.md` é enviado ao `gpt-5-nano` junto da entrada.
-6. O orquestrador deve responder somente com um dos identificadores autorizados.
-7. O handler chama novamente a Responses API, desta vez com o modelo selecionado.
-8. Para modelos listados como incompatíveis, o gateway omite o parâmetro `temperature`.
-9. A propriedade `output_text` do SDK é devolvida ao cliente junto do modelo escolhido.
+A API não mantém sessão local. O estado compartilhado se resume aos contadores com expiração no Redis:
 
-> **Impacto operacional:** a latência e o custo de uma chamada incluem duas inferências de modelo, além das consultas ao Redis.
+| Chave | Escopo |
+|---|---|
+| `global_rate_limit` | Todas as requisições. |
+| `rate_limit:{user}` | Requisições associadas ao valor de `X-instance_user`. |
 
-## Estratégia de seleção de modelos
-
-O arquivo `src/repository/prompt/orquestration.md` contém as regras de roteamento. Ele instrui o agente a escolher o modelo mais econômico que ainda tenha capacidade suficiente para concluir a tarefa com boa probabilidade de sucesso.
-
-| Modelo permitido | Papel definido no prompt | Exemplos de uso esperado |
-|---|---|---|
-| `gpt-5.6-luna` | Nível econômico e padrão | Solicitações simples, curtas, previsíveis e de baixa complexidade. |
-| `gpt-5.6-terra` | Equilíbrio entre custo e capacidade | Tarefas moderadas, análises comuns e trabalhos com múltiplas etapas. |
-| `gpt-5.6-sol` | Maior capacidade geral | Problemas ambíguos, profundos, sensíveis ou com muitas restrições simultâneas. |
-| `gpt-5.3-codex` | Especialização em engenharia de software | Implementação, alteração, depuração e trabalho prático sobre código. |
-
-O roteador em si utiliza `gpt-5-nano`. A resposta do roteador é usada diretamente como o parâmetro `model` da segunda chamada.
-
-### Critérios centrais do prompt
-
-- profundidade de raciocínio exigida;
-- dificuldade de interpretar a intenção;
-- número e interação das restrições;
-- risco e necessidade de precisão;
-- natureza conceitual ou prática da tarefa;
-- foco específico em engenharia de software;
-- custo relativo entre modelos capazes de resolver o problema;
-- resistência a tentativas do próprio input de forçar uma escolha.
-
-Os IDs precisam estar habilitados para a conta e o projeto da API utilizados na implantação.
+Os logs são gravados em `src/logs/app.log` e também enviados para a saída padrão do processo.
 
 ## Estrutura do projeto
 
 ```text
 AiAgentSelector/
 ├── README.md
+├── LICENSE
 ├── src/
-│   ├── .gitignore
 │   ├── config/
 │   │   └── settings.py
 │   ├── controller/
 │   │   ├── compose.yml
 │   │   ├── depends/
-│   │   │   ├── .dockerignore
 │   │   │   ├── dockerfile
 │   │   │   └── requirements.txt
 │   │   └── init/
@@ -291,34 +184,31 @@ AiAgentSelector/
     └── utils.py
 ```
 
-> O diretório `midlleware` e o arquivo `orquestration.md` mantêm a grafia usada atualmente no código. Renomeá-los exige atualizar os respectivos imports e caminhos.
+Os nomes `midlleware` e `orquestration.md` refletem a estrutura atual. Caso sejam corrigidos, os imports e caminhos correspondentes também precisam mudar.
 
 ## Tecnologias
 
-| Tecnologia | Versão declarada | Uso |
+| Tecnologia | Versão declarada | Papel no projeto |
 |---|---:|---|
-| Python | `3.14.7` na imagem | Linguagem e runtime. |
-| FastAPI | `0.141.1` | API HTTP, roteamento e OpenAPI. |
+| Python | `3.14.7` | Runtime da aplicação. |
+| FastAPI | `0.141.1` | API HTTP e geração do schema OpenAPI. |
 | Uvicorn | `0.52.4` | Servidor ASGI. |
-| Pydantic | `2.13.4` | Validação do corpo das requisições. |
-| OpenAI SDK | `3.3.1` | Cliente da Responses API. |
-| Redis client | `8.1.0` | Pipeline e acesso aos contadores. |
-| python-dotenv | `1.2.3` | Carregamento de configuração local. |
-| Docker Compose | — | Orquestração da API e do Redis. |
-
-Todas as dependências Python estão fixadas em `src/controller/depends/requirements.txt`.
+| Pydantic | `2.13.4` | Validação dos dados de entrada. |
+| OpenAI SDK | `3.3.1` | Acesso à Responses API. |
+| redis-py | `8.1.0` | Comunicação com o Redis. |
+| Docker Compose | — | Execução conjunta da API e do Redis. |
 
 ## Como executar
 
-### Pré-requisitos
+### Requisitos
 
-- Docker com suporte ao comando `docker compose`;
-- uma chave válida da API da OpenAI;
-- acesso, na conta utilizada, aos modelos definidos no prompt de orquestração.
+- Docker com o comando `docker compose`;
+- uma chave da API da OpenAI;
+- acesso aos modelos configurados no prompt de roteamento.
 
-### 1. Configure o ambiente
+### Configuração
 
-Crie `src/config/.env`:
+Crie `src/config/.env` com:
 
 ```dotenv
 api_key=sk-substitua-pela-sua-chave
@@ -327,84 +217,72 @@ global_rate_limit=100
 origin=http://localhost:3000
 ```
 
-| Variável | Obrigatória | Descrição | Exemplo |
-|---|:---:|---|---|
-| `api_key` | Sim | Chave usada pelo SDK da OpenAI. | `sk-...` |
-| `rate_limit` | Sim | Limite planejado por usuário na janela do Redis. | `10` |
-| `global_rate_limit` | Sim | Limite planejado para todas as requisições. | `100` |
-| `origin` | Não | Origem aceita pelo CORS. Usa `*` quando ausente. | `http://localhost:3000` |
+| Variável | Obrigatória | Uso |
+|---|:---:|---|
+| `api_key` | Sim | Autentica as chamadas à OpenAI. |
+| `rate_limit` | Sim | Limite planejado por identificador de usuário. |
+| `global_rate_limit` | Sim | Limite planejado para toda a aplicação. |
+| `origin` | Não | Origem aceita pelo CORS; o padrão atual é `*`. |
 
-Nunca versiona o arquivo `.env`. O `.gitignore` do projeto já declara `config/.env` quando o contexto do repositório está em `src`.
+Não envie o `.env` para o repositório. Se uma chave for exposta, revogue-a e gere outra.
 
-### 2. Inicie os serviços
+### Docker Compose
 
-Execute a partir da raiz do projeto:
+Na raiz do projeto, execute:
 
 ```bash
 docker compose -f src/controller/compose.yml up --build
 ```
 
-A API ficará disponível em:
+A API estará disponível em `http://localhost:8000`.
 
-```text
-http://localhost:8000
-```
-
-Para encerrar e remover os contêineres:
+Para encerrar:
 
 ```bash
 docker compose -f src/controller/compose.yml down
 ```
 
-### Execução sem Docker
+O host do Redis está fixado como `redis`, nome resolvido pela rede do Compose. Para executar a API diretamente no sistema, esse endereço precisa ser parametrizado ou resolvido localmente.
 
-O caminho suportado pela configuração atual é o Docker Compose. O conector Redis usa o hostname fixo `redis`, resolvido pela rede interna do Compose. Para executar a API diretamente no host, é necessário tornar esse hostname resolvível ou parametrizar o host do Redis no código.
+## API
 
-## Referência da API
+### `POST /text/`
 
-### Processar texto
+Analisa a entrada, escolhe o modelo e devolve o resultado da execução.
+
+#### Cabeçalho
 
 ```http
-POST /text/
-Content-Type: application/json
-X-instance_user: <identificador-do-cliente>
+X-instance_user: identificador-do-cliente
 ```
 
-Use a barra final em `/text/`. Uma chamada para `/text` pode gerar redirecionamento automático, fazendo a requisição atravessar o middleware mais de uma vez.
+Esse cabeçalho é obrigatório, mas não funciona como autenticação. O cliente pode escolher o próprio valor.
 
-### Cabeçalho obrigatório
-
-| Cabeçalho | Tipo | Descrição |
-|---|---|---|
-| `X-instance_user` | `string` | Identifica o consumidor usado pelo rate limit individual. Atualmente não representa autenticação. |
-
-### Corpo da requisição
+#### Corpo
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|:---:|---|
-| `prompt` | `string` | Sim | Instruções usadas pela segunda inferência. |
-| `input` | `string` | Sim | Solicitação analisada pelo orquestrador e executada pelo modelo selecionado. |
-| `temperature` | `float` | Sim | Temperatura desejada. O gateway a omite para modelos marcados como incompatíveis. |
-| `max_token` | `integer \| float \| null` | Não | Mapeado internamente para `max_output_tokens`; quando ausente, usa o padrão da API. |
+| `prompt` | `string` | Sim | Instruções enviadas ao modelo executor. |
+| `input` | `string` | Sim | Conteúdo analisado e executado. |
+| `temperature` | `float` | Sim | Temperatura desejada, quando aceita pelo modelo. |
+| `max_token` | `integer \| float \| null` | Não | Repassado como `max_output_tokens`. |
 
-### Exemplo com cURL
+#### Exemplo
 
 ```bash
-curl --request POST \
-  --url http://localhost:8000/text/ \
+curl http://localhost:8000/text/ \
+  --request POST \
   --header 'Content-Type: application/json' \
   --header 'X-instance_user: exemplo-usuario' \
   --data '{
-    "prompt": "Responda em português, com clareza e exemplos.",
+    "prompt": "Responda em português e use exemplos curtos.",
     "input": "Explique como funciona uma árvore binária de busca.",
     "temperature": 0.3,
     "max_token": 800
   }'
 ```
 
-### Resposta de sucesso
-
-Status atual: `201 Created`.
+#### Resposta
 
 ```json
 {
@@ -414,153 +292,60 @@ Status atual: `201 Created`.
 }
 ```
 
-| Campo | Descrição |
-|---|---|
-| `output` | Texto consolidado retornado pela Responses API. |
-| `model` | Identificador selecionado pelo orquestrador. |
-| `type` | Tipo do conteúdo; atualmente sempre `text`. |
+O status de sucesso usado atualmente é `201 Created`.
 
-### Respostas de erro observáveis
-
-| Status | Situação |
+| Status | Motivo |
 |---:|---|
-| `422` | Cabeçalho `X-instance_user` ausente ou corpo incompatível com o schema. |
-| `429` | Limite global ou individual excedido, quando os contadores estiverem ativos. |
-| `501` | Exceção capturada pelo handler durante seleção ou geração. |
+| `201` | Solicitação processada. |
+| `422` | Cabeçalho ausente ou corpo inválido. |
+| `429` | Limite global ou individual excedido. |
+| `501` | Falha capturada durante o roteamento ou a geração. |
 
-O FastAPI também gera a especificação OpenAPI e as interfaces `/docs` e `/redoc`; no estado atual, o middleware global exige `X-instance_user` inclusive nessas rotas, o que limita o acesso direto pelo navegador.
+Use `/text/` com a barra final. A rota `/text` pode causar um redirecionamento e fazer a chamada passar novamente pelo middleware.
 
-## Rate limiting
+## Antes de usar em produção
 
-O desenho utiliza contadores Redis com expiração padrão de 60 segundos.
+O projeto está em fase de MVP. Estes pontos refletem o código atual e merecem atenção antes de uma implantação pública:
 
-| Chave Redis | Escopo | Finalidade |
-|---|---|---|
-| `global_rate_limit` | Aplicação | Contabilizar chamadas de todos os consumidores. |
-| `rate_limit:{user}` | Usuário | Contabilizar chamadas do valor recebido em `X-instance_user`. |
+- `instance.set(name="global_rate_limit")` é chamado sem `await`, então o contador global não é incrementado como esperado;
+- o contador individual é consultado, mas não é incrementado;
+- os limites do ambiente e os valores do Redis são comparados como texto, não como números;
+- as funções são `async`, porém os clientes OpenAI e Redis usados internamente são síncronos e podem bloquear o event loop;
+- o pipeline Redis é global e compartilhado entre requisições;
+- a resposta do roteador é usada como ID de modelo sem normalização ou validação em uma allowlist;
+- `max_token` aceita números decimais, embora a API espere uma quantidade inteira de tokens;
+- o middleware também intercepta documentação, health checks e requisições CORS de preflight;
+- o Uvicorn inicia com `--reload`, opção adequada a desenvolvimento;
+- Redis usa a tag `latest` e ainda não possui health check nem volume persistente.
 
-`ControlCache.set()` agenda um `INCR`, aplica `EXPIRE` e executa o pipeline. `ControlCache.get()` agenda um `GET` e devolve o primeiro resultado do pipeline.
-
-O cabeçalho funciona apenas como identificador lógico. Como seu valor é controlado pelo cliente, ele não deve ser tratado como identidade autenticada sem uma camada adicional de autenticação.
-
-## Logs e observabilidade
-
-O logger global usa o formato:
-
-```text
-timestamp | level | logger | message
-```
-
-Os eventos são enviados para:
-
-- saída padrão do processo, visível em `docker compose logs`;
-- `src/logs/app.log`, dentro do contêiner.
-
-Atualmente são registrados inicialização do Redis, acesso às rotas, consultas de limite, modelo usado, alertas de compatibilidade e exceções. O conteúdo do prompt e da resposta não é registrado pelo gateway.
-
-Como não há volume nem rotação configurados para `app.log`, o arquivo é efêmero quando o contêiner é removido e pode crescer durante uma execução longa.
+Esses itens não mudam a proposta do projeto, mas ajudam a definir uma próxima etapa objetiva: tornar o rate limit atômico, usar clientes assíncronos, validar a saída do roteador e criar testes automatizados.
 
 ## Testes
 
-O diretório `tests/` contém scripts manuais para experimentar partes isoladas do sistema:
+O diretório `tests/` reúne scripts manuais para experimentar API, configuração, logs, Redis e OpenAI. Eles ainda não formam uma suíte automatizada: não usam `pytest`, não possuem asserções e alguns não acompanham as assinaturas assíncronas atuais.
 
-- `api.py`: chamada HTTP ao endpoint;
-- `config.py`: leitura dos limites configurados;
-- `logs.py`: escrita de uma mensagem de log;
-- `repository.py`: carregamento do prompt e tentativa de acesso ao cache;
-- `service.py`: tentativa de seleção de modelo;
-- `utils.py`: chamada direta ao gateway OpenAI.
+Uma boa primeira contribuição é transformar esses scripts em testes unitários e de integração com mocks para OpenAI e Redis.
 
-Esses arquivos ainda não constituem uma suíte automatizada: não usam `pytest`, não possuem asserções e alguns exemplos não foram atualizados para as assinaturas assíncronas atuais. Eles devem ser tratados como scripts exploratórios até serem revisados.
+## Contribuindo
 
-## Decisões arquiteturais
+Contribuições são bem-vindas. Para manter as mudanças fáceis de revisar:
 
-### Roteamento por LLM
+1. faça um fork do projeto;
+2. crie uma branch para a alteração;
+3. inclua testes quando mudar comportamento;
+4. mantenha cada commit focado em uma única ideia;
+5. abra um pull request explicando o problema e a solução.
 
-Uma LLM é usada para classificar solicitações abertas, evitando manter uma árvore rígida de regras no código. A contrapartida é adicionar custo, latência e uma segunda possibilidade de falha a toda chamada.
+Ao contribuir, você concorda que sua contribuição será distribuída sob a mesma MIT License do projeto.
 
-### Prompt versionado em Markdown
+## Créditos
 
-As regras ficam fora do código em `orquestration.md`, facilitando leitura e evolução. O arquivo é carregado uma vez durante a importação e a aplicação falha ao iniciar se ele estiver ausente ou vazio.
+Criado e mantido por **Brayan**.
 
-### Gateway único para a OpenAI
-
-`request_llm()` centraliza a criação do cliente, o uso da Responses API, o limite de saída e a compatibilidade de temperatura. Isso reduz duplicação entre o roteador e o executor.
-
-### Redis como estado temporário
-
-O serviço HTTP permanece conceitualmente sem estado de sessão. Os contadores compartilhados ficam no Redis e podem atender múltiplas réplicas da API, desde que as operações sejam feitas de forma atômica e segura para concorrência.
-
-### Identificador de modelo visível
-
-Retornar `model` na resposta facilita auditoria, análise de custo e avaliação futura da qualidade do roteamento.
-
-## Estado atual e pontos de atenção
-
-Esta seção descreve o comportamento do código recebido, não requisitos adicionais para uma primeira leitura do projeto.
-
-| Prioridade | Ponto observado | Impacto |
-|:---:|---|---|
-| Alta | A chamada `instance.set(name="global_rate_limit")` no middleware não usa `await`. | O contador global não é incrementado pela execução atual e pode gerar aviso de coroutine não aguardada. |
-| Alta | O contador `rate_limit:{user}` é consultado, mas nunca incrementado. | O limite individual não entra em vigor a partir de um Redis vazio. |
-| Alta | Cliente OpenAI e cliente Redis são síncronos dentro de funções `async`. | As operações de rede podem bloquear o event loop e reduzir concorrência. |
-| Alta | Um único objeto Redis `Pipeline` é compartilhado globalmente. | Requisições concorrentes podem misturar comandos; pipelines também não tornam o ciclo `GET`/comparação/`INCR` atômico. |
-| Média | Limites do ambiente e valores Redis permanecem como texto. | Comparações são lexicográficas, não numéricas; por exemplo, `"9" >= "10"` produz um resultado incorreto para rate limit. |
-| Média | O modelo retornado pelo orquestrador não é normalizado nem validado no código. | Espaços, formatação inesperada ou um ID fora da allowlist podem fazer a segunda chamada falhar. |
-| Média | `max_token` aceita `float`, mas `max_output_tokens` representa uma quantidade inteira. | Valores decimais podem ser rejeitados pela API externa. |
-| Média | O corpo de erro usa um objeto `Exception` diretamente em `JSONResponse`. | A serialização do próprio erro pode falhar; o status `501` também não representa todos os tipos de falha envolvidos. |
-| Média | O middleware cobre todas as rotas e exige o cabeçalho antes do encaminhamento. | OpenAPI, documentação, health checks e requisições CORS `OPTIONS` podem ser bloqueados. |
-| Média | O contêiner inicia Uvicorn com `--reload`. | Adequado ao desenvolvimento, mas não recomendado para produção. |
-| Baixa | Redis usa `latest`, sem versão fixa, health check ou volume. | Builds podem mudar com o tempo; `depends_on` garante ordem, não prontidão; dados são descartáveis. |
-| Baixa | Os scripts em `tests/` estão defasados em relação às funções assíncronas. | Não existe hoje uma verificação automatizada confiável contra regressões. |
-
-## Segurança
-
-- mantenha `api_key` exclusivamente no ambiente ou em um gerenciador de segredos;
-- nunca adicione `src/config/.env` ao repositório ou à imagem;
-- restrinja `origin` aos domínios conhecidos em ambientes públicos;
-- não use `X-instance_user` como autenticação: o cliente pode escolher qualquer valor;
-- adicione autenticação e autorização antes de expor o endpoint publicamente;
-- limite tamanho de `prompt` e `input` para controlar custo e abuso;
-- valide o modelo retornado contra uma allowlist antes da segunda chamada;
-- não devolva detalhes internos de exceções ao consumidor;
-- aplique limites também no provedor, no proxy ou no gateway de entrada;
-- avalie proteção contra prompt injection, pois a entrada do cliente participa da decisão de roteamento.
-
-## Roadmap recomendado
-
-- [ ] converter `rate_limit` e `global_rate_limit` para inteiros durante a inicialização;
-- [ ] corrigir e tornar atômica a contabilização global e individual no Redis;
-- [ ] trocar clientes síncronos por `AsyncOpenAI` e Redis assíncrono, ou executar I/O bloqueante fora do event loop;
-- [ ] usar um cliente Redis compartilhado e criar pipelines locais por operação;
-- [ ] validar e normalizar a saída do orquestrador contra uma allowlist;
-- [ ] separar rotas públicas, documentação, health check e preflight do middleware de uso;
-- [ ] padronizar erros em um schema serializável e usar códigos HTTP semânticos;
-- [ ] alterar `max_token` para inteiro e adicionar limites aos campos do payload;
-- [ ] criar testes unitários, de integração e de contrato com mocks da OpenAI e Redis;
-- [ ] fixar a versão da imagem Redis e adicionar health checks;
-- [ ] remover `--reload` e definir política de workers para produção;
-- [ ] adicionar rotação ou exportação estruturada de logs;
-- [ ] incluir métricas de latência, modelo escolhido, tokens e taxa de erro;
-- [ ] adicionar CI, lint, formatação, análise de tipos e cobertura;
-- [ ] parametrizar host e porta do Redis;
-- [ ] corrigir gradualmente a nomenclatura `midlleware`/`orquestration` sem quebrar imports.
-
-## Referências
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Redis](https://redis.io/docs/latest/)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [OpenAI — criação de respostas](https://developers.openai.com/api/reference/cli/resources/responses/methods/create)
+Se você reutilizar ou distribuir este projeto, preserve o aviso de copyright e o arquivo `LICENSE`. Uma menção ao projeto original no seu README também é muito bem-vinda.
 
 ## Licença
 
-O pacote analisado não inclui um arquivo de licença. Antes de distribuir ou aceitar contribuições externas, escolha uma licença e adicione um arquivo `LICENSE` na raiz do projeto.
+Código aberto sob a [MIT License](LICENSE).
 
----
-
-<div align="center">
-
-Desenvolvido para tornar a escolha de modelos de IA mais eficiente, transparente e orientada à complexidade real de cada tarefa!
-
-</div>
+Copyright © 2026 Brayan.
